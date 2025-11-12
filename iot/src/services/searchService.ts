@@ -1,4 +1,4 @@
-import { USE_MOCK_DATA, API_BASE_URL, logger } from './config';
+import { apiCall, logger, USE_MOCK_DATA } from './config';
 
 export interface SearchResponse {
   columns: string[];
@@ -24,25 +24,25 @@ export interface SearchParams {
  */
 export async function searchData(params: SearchParams): Promise<SearchResponse> {
   const startTime = performance.now();
-  
+
   logger.request('searchService', 'searchData', params);
-  
+
   try {
     if (USE_MOCK_DATA) {
       // Mock data for demonstration
       const mockData = generateMockSearchResults(params);
       const duration = Math.round(performance.now() - startTime);
-      
+
       logger.response('searchService', 'searchData', {
         recordCount: mockData.data.length,
         total: mockData.total,
         columns: mockData.columns.length
       }, duration);
-      
+
       return mockData;
     }
 
-    // Real API call
+    // Real API call using apiCall which uses serviceUtils for headers
     const queryParams = new URLSearchParams({
       q: params.query,
       limit: params.limit.toString(),
@@ -56,21 +56,9 @@ export async function searchData(params: SearchParams): Promise<SearchResponse> 
       queryParams.append('sort_direction', params.sortDirection);
     }
 
-    const response = await fetch(`${API_BASE_URL}/api/search?${queryParams}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_API_KEY_HERE',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Search API error: ${response.status}`);
-    }
-
-    const data: SearchResponse = await response.json();
+    const data: SearchResponse = await apiCall<SearchResponse>(`/api/search?${queryParams}`);
     const duration = Math.round(performance.now() - startTime);
-    
+
     logger.response('searchService', 'searchData', {
       recordCount: data.data.length,
       total: data.total,
@@ -90,14 +78,14 @@ export async function searchData(params: SearchParams): Promise<SearchResponse> 
  */
 function generateMockSearchResults(params: SearchParams): SearchResponse {
   const { query, limit, offset, sortColumn, sortDirection } = params;
-  
+
   // Determine what kind of data to return based on query
   const queryLower = query.toLowerCase();
-  
+
   let columns: string[];
   let totalRecords: number;
   let dataGenerator: (index: number) => Record<string, any>;
-  
+
   if (queryLower.includes('temperature') || queryLower.includes('device')) {
     // Temperature/Device data
     columns = ['device_id', 'location', 'temperature', 'humidity', 'timestamp', 'status'];
@@ -158,7 +146,7 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
       created_at: new Date(Date.now() - Math.random() * 31536000000).toISOString().split('T')[0],
     });
   }
-  
+
   // Generate all data first (for sorting)
   const allData: Record<string, any>[] = [];
   for (let i = 0; i < totalRecords; i++) {
@@ -168,16 +156,16 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
   // Apply sorting if specified
   if (sortColumn && columns.includes(sortColumn)) {
     console.log(`[searchService] Applying server-side sort: ${sortColumn} ${sortDirection}`);
-    
+
     allData.sort((a, b) => {
       const aVal = a[sortColumn];
       const bVal = b[sortColumn];
-      
+
       // Handle null/undefined
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return sortDirection === 'asc' ? 1 : -1;
       if (bVal == null) return sortDirection === 'asc' ? -1 : 1;
-      
+
       // Compare values
       let comparison = 0;
       if (typeof aVal === 'number' && typeof bVal === 'number') {
@@ -185,22 +173,22 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
       } else {
         comparison = String(aVal).localeCompare(String(bVal));
       }
-      
+
       return sortDirection === 'desc' ? -comparison : comparison;
     });
-    
-    console.log(`[searchService] Sort complete. First 3 values:`, 
+
+    console.log(`[searchService] Sort complete. First 3 values:`,
       allData.slice(0, 3).map(item => item[sortColumn])
     );
   } else if (sortColumn) {
     console.log(`[searchService] Sort column "${sortColumn}" not found in columns:`, columns);
   }
-  
+
   // Get page data
   const start = offset;
   const end = Math.min(offset + limit, totalRecords);
   const data = allData.slice(start, end);
-  
+
   // Generate SQL query based on the search
   let tableName = 'items';
   if (queryLower.includes('temperature') || queryLower.includes('device')) {
@@ -214,11 +202,11 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
   } else if (queryLower.includes('timestamp') || queryLower.includes('store') || queryLower.includes('detection') || queryLower.includes('label')) {
     tableName = 'detections';
   }
-  
+
   // Build SELECT clause with column names
   const selectClause = columns.length > 0 ? columns.join(', ') : '*';
   let sql = `SELECT ${selectClause} FROM ${tableName}`;
-  
+
   // Add WHERE clause if query has specific conditions
   if (queryLower.includes('temperature') && queryLower.includes('>')) {
     sql += ' WHERE temperature > 70';
@@ -230,7 +218,7 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
       sql += ' WHERE timestamp IS NOT NULL';
     }
   }
-  
+
   // Add ORDER BY if sorting
   if (sortColumn && columns.includes(sortColumn)) {
     sql += ` ORDER BY ${sortColumn} ${sortDirection === 'desc' ? 'DESC' : 'ASC'}`;
@@ -240,9 +228,9 @@ function generateMockSearchResults(params: SearchParams): SearchResponse {
   } else if (queryLower.includes('oldest') && columns.includes('timestamp')) {
     sql += ' ORDER BY timestamp ASC';
   }
-  
+
   sql += ` LIMIT ${limit} OFFSET ${offset}`;
-  
+
   // Generate description based on query
   let description = `Query results for: ${query}`;
   if (queryLower.includes('detection') && queryLower.includes('count')) {

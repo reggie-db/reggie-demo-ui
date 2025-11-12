@@ -25,16 +25,15 @@ export const API_CONFIG = {
   apiKey: "", // Set to your API key
 
   // Request timeout in milliseconds
-  timeout: 10000,
+  timeout: 1000 * 30,
 };
 
 /**
  * Helper function to get authentication headers
+ * Note: Session ID is automatically added via buildRequestHeaders
  */
 export const getAuthHeaders = (): HeadersInit => {
-  const headers: HeadersInit = {
-    "Content-Type": "application/json",
-  };
+  const headers: HeadersInit = {};
 
   if (API_CONFIG.bearerToken) {
     headers["Authorization"] = `Bearer ${API_CONFIG.bearerToken}`;
@@ -143,105 +142,6 @@ export const logger = {
   },
 };
 
-/**
- * Helper function to make API calls with error handling
- */
-export const apiCall = async <T = any>(
-  endpoint: string,
-  options?: RequestInit,
-): Promise<T> => {
-  const finalOptions = options || {};
-  const url = `${API_BASE_URL}${endpoint}`;
-  const startTime = performance.now();
-
-  // Log the API request
-  console.log(
-    `%c[API] %cRequest → %c${finalOptions.method || "GET"} ${endpoint}`,
-    LOG_STYLES.api,
-    LOG_STYLES.info,
-    "",
-  );
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...finalOptions,
-      headers: {
-        ...getAuthHeaders(),
-        ...finalOptions.headers,
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-    const duration = Math.round(performance.now() - startTime);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        success: false,
-        error: {
-          code: "UNKNOWN_ERROR",
-          message: `HTTP ${response.status}: ${response.statusText}`,
-        },
-      }));
-
-      console.log(
-        `%c[API] %cResponse ✗ %c${endpoint} %c(${duration}ms) %c${response.status}`,
-        LOG_STYLES.api,
-        LOG_STYLES.error,
-        LOG_STYLES.info,
-        "",
-        LOG_STYLES.error,
-      );
-      console.error("Error:", errorData);
-
-      throw new Error(
-        errorData.error?.message || `API Error: ${response.status}`,
-      );
-    }
-
-    const data = await response.json();
-
-    console.log(
-      `%c[API] %cResponse ✓ %c${endpoint} %c(${duration}ms)`,
-      LOG_STYLES.api,
-      LOG_STYLES.success,
-      LOG_STYLES.info,
-      "",
-    );
-    console.log("Data:", data.data);
-
-    return data.data as T;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    const duration = Math.round(performance.now() - startTime);
-
-    if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        console.log(
-          `%c[API] %cTimeout ✗ %c${endpoint} %c(${duration}ms)`,
-          LOG_STYLES.api,
-          LOG_STYLES.error,
-          LOG_STYLES.info,
-          "",
-        );
-        throw new Error("Request timeout - please try again");
-      }
-
-      console.log(
-        `%c[API] %cError ✗ %c${endpoint} %c(${duration}ms)`,
-        LOG_STYLES.api,
-        LOG_STYLES.error,
-        LOG_STYLES.info,
-        "",
-      );
-      console.error("Error:", error);
-
-      throw error;
-    }
-
-    throw new Error("An unexpected error occurred");
-  }
-};
+// apiCall has been moved to serviceUtils.ts
+// Re-export for backward compatibility
+export { apiCall } from './serviceUtils';

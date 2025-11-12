@@ -554,16 +554,16 @@ export function LazyDataGrid() {
                     column === 'status' || column.includes('status')
                       ? statusRenderer
                       : (root: any, _column: any, model: any) => {
-                        const value = model.item[column];
-                        root.textContent = formatCellValue(value);
+                          const value = model.item[column];
+                          root.textContent = formatCellValue(value);
 
-                        // Apply styling
-                        if (typeof value === 'number' || !isNaN(Number(value))) {
-                          root.style.fontFamily = 'monospace';
+                          // Apply styling
+                          if (typeof value === 'number' || !isNaN(Number(value))) {
+                            root.style.fontFamily = 'monospace';
+                          }
                         }
-                      }
                   }
-                ></vaadin-grid-sort-column>
+                />
               ))}
             </vaadin-grid>
           </CardContent>
