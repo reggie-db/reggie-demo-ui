@@ -1,0 +1,1037 @@
+openapi: 3.0.3
+info:
+  title: RaceTrac IoT Monitoring Dashboard API
+  description: |
+    API specification for the RaceTrac Petroleum IoT monitoring dashboard.
+    This API provides endpoints for temperature monitoring, device management,
+    alerts, license plate detection, and object detection across multiple store locations.
+
+    ## Features
+    - Real-time temperature monitoring across store locations
+    - Device status tracking with color-coded alerts (normal/warning/critical)
+    - Historical temperature and humidity data
+    - License plate detection and state distribution analytics
+    - Object detection with hourly activity tracking
+    - AI-powered chat assistance for dashboard insights
+  version: 1.0.0
+  contact:
+    name: RaceTrac IoT Team
+    email: iot-support@racetrac.com
+  license:
+    name: Proprietary
+    url: https://racetrac.com/api-license
+
+servers:
+  - url: https://api.racetrac.com/v1
+    description: Production server
+  - url: https://staging-api.racetrac.com/v1
+    description: Staging server
+  - url: http://localhost:3000/v1
+    description: Local development server
+
+tags:
+  - name: Devices
+    description: Temperature monitoring devices and IoT sensors
+  - name: Alerts
+    description: System alerts and notifications
+  - name: License Plates
+    description: License plate detection and analytics
+  - name: Object Detection
+    description: Object detection and tracking
+  - name: AI Chat
+    description: AI-powered assistance and insights
+  - name: Search
+    description: Natural language search and data exploration
+
+paths:
+  /devices:
+    get:
+      tags:
+        - Devices
+      summary: Get all devices
+      description: Retrieve a list of all IoT temperature monitoring devices across store locations
+      operationId: getDevices
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Device"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /devices/{deviceId}:
+    get:
+      tags:
+        - Devices
+      summary: Get device by ID
+      description: Retrieve detailed information about a specific device
+      operationId: getDeviceById
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Unique identifier for the device
+          schema:
+            type: string
+            example: RT-ATL-001
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Device"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /devices/{deviceId}/history:
+    get:
+      tags:
+        - Devices
+      summary: Get device historical data
+      description: Retrieve historical temperature and humidity readings for a specific device
+      operationId: getDeviceHistory
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Unique identifier for the device
+          schema:
+            type: string
+            example: RT-ATL-001
+        - name: hours
+          in: query
+          required: false
+          description: Number of hours of historical data to retrieve (default 24)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 168
+            default: 24
+        - name: interval
+          in: query
+          required: false
+          description: Data point interval in minutes (default 60)
+          schema:
+            type: integer
+            enum: [15, 30, 60]
+            default: 60
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/TemperatureDataPoint"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /devices/stats:
+    get:
+      tags:
+        - Devices
+      summary: Get device statistics
+      description: Retrieve aggregated statistics across all devices
+      operationId: getDeviceStats
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/DeviceStats"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /alerts:
+    get:
+      tags:
+        - Alerts
+      summary: Get all alerts
+      description: Retrieve all active alerts across the monitoring system
+      operationId: getAlerts
+      parameters:
+        - name: type
+          in: query
+          required: false
+          description: Filter alerts by type
+          schema:
+            type: string
+            enum: [critical, warning, info]
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of alerts to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Alert"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /alerts/stats:
+    get:
+      tags:
+        - Alerts
+      summary: Get alert statistics
+      description: Retrieve statistics about active alerts
+      operationId: getAlertStats
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      criticalCount:
+                        type: integer
+                        description: Number of critical alerts
+                        example: 1
+                      warningCount:
+                        type: integer
+                        description: Number of warning alerts
+                        example: 2
+                      infoCount:
+                        type: integer
+                        description: Number of informational alerts
+                        example: 3
+                      totalCount:
+                        type: integer
+                        description: Total number of alerts
+                        example: 6
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /license-plates/distribution:
+    get:
+      tags:
+        - License Plates
+      summary: Get license plate state distribution
+      description: Retrieve the distribution of detected license plates by state
+      operationId: getLicensePlateDistribution
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Time period for the data
+          schema:
+            type: string
+            enum: [today, week, month]
+            default: today
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/StateDistribution"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /license-plates/recent:
+    get:
+      tags:
+        - License Plates
+      summary: Get recent license plate detections
+      description: Retrieve the most recent license plate detections
+      operationId: getRecentPlates
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of detections to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RecentPlate"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /license-plates/stats:
+    get:
+      tags:
+        - License Plates
+      summary: Get license plate statistics
+      description: Retrieve overall statistics for license plate detection
+      operationId: getLicensePlateStats
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/StateStats"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /object-detection/summary:
+    get:
+      tags:
+        - Object Detection
+      summary: Get object detection summary
+      description: Retrieve summary statistics for detected objects
+      operationId: getObjectDetectionSummary
+      parameters:
+        - name: period
+          in: query
+          required: false
+          description: Time period for the data
+          schema:
+            type: string
+            enum: [today, week, month]
+            default: today
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ObjectDetection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /object-detection/hourly:
+    get:
+      tags:
+        - Object Detection
+      summary: Get hourly detection activity
+      description: Retrieve object detection counts by hour
+      operationId: getHourlyDetections
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Date for hourly data (ISO 8601 format, defaults to today)
+          schema:
+            type: string
+            format: date
+            example: "2025-10-28"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/HourlyDetection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /object-detection/recent:
+    get:
+      tags:
+        - Object Detection
+      summary: Get recent object detections
+      description: Retrieve the most recent object detections
+      operationId: getRecentDetections
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of detections to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RecentDetection"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /ai/chat:
+    post:
+      tags:
+        - AI Chat
+      summary: Send chat message to AI assistant
+      description: Send a message to the AI assistant and receive a response with insights
+      operationId: sendChatMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: User message to the AI assistant
+                  example: What's the current temperature status?
+                context:
+                  type: object
+                  description: Optional context information to help AI generate better responses
+                  properties:
+                    currentView:
+                      type: string
+                      example: overview
+                    selectedDevice:
+                      type: string
+                      example: RT-ATL-001
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      response:
+                        type: string
+                        description: AI-generated response
+                        example: The average temperature across all monitored locations is currently 75.4°F. Store #3421 in Tampa has a critical temperature of 91.5°F that requires immediate attention.
+                      confidence:
+                        type: number
+                        format: float
+                        description: Confidence score of the response (0-1)
+                        example: 0.95
+                      timestamp:
+                        type: string
+                        format: date-time
+                        description: Response timestamp
+                        example: "2025-10-28T14:32:00Z"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/search:
+    get:
+      tags:
+        - Search
+      summary: Search data with natural language
+      description: |
+        Search and explore data using natural language queries.
+        Supports pagination with limit and offset for virtual scrolling.
+        Returns a dataframe-like structure with dynamic columns based on the query.
+      operationId: searchData
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Natural language search query
+          schema:
+            type: string
+            example: show me all temperature devices
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of records to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          description: Number of records to skip for pagination
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: sort_column
+          in: query
+          required: false
+          description: Column name to sort by
+          schema:
+            type: string
+            example: temperature
+        - name: sort_direction
+          in: query
+          required: false
+          description: Sort direction (ascending or descending)
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+            example: asc
+      responses:
+        "200":
+          description: Successful response with search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  columns:
+                    type: array
+                    description: Column names for the result set
+                    items:
+                      type: string
+                    example: ["device_id", "location", "temperature", "status"]
+                  data:
+                    type: array
+                    description: Array of data rows
+                    items:
+                      type: object
+                      additionalProperties: true
+                    example:
+                      - device_id: RT-ATL-001
+                        location: Atlanta, GA
+                        temperature: 72.4
+                        status: normal
+                      - device_id: RT-HOU-002
+                        location: Houston, TX
+                        temperature: 85.3
+                        status: warning
+                  sql:
+                    type: string
+                    description: Executed SQL query
+                    example: SELECT * FROM devices WHERE temperature > 70 ORDER BY temperature DESC LIMIT 50 OFFSET 0
+                  description:
+                    type: string
+                    description: Description of the query
+                    example: Total number of devices with temperature above 70 degrees
+                  total:
+                    type: integer
+                    description: Total number of records matching the query
+                    example: 500
+                  offset:
+                    type: integer
+                    description: Current offset in the result set
+                    example: 0
+                  limit:
+                    type: integer
+                    description: Number of records returned in this response
+                    example: 50
+                  hasMore:
+                    type: boolean
+                    description: Whether there are more records available
+                    example: true
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    Device:
+      type: object
+      required:
+        - id
+        - name
+        - location
+        - currentTemp
+        - status
+        - lastUpdate
+      properties:
+        id:
+          type: string
+          description: Unique device identifier
+          example: RT-ATL-001
+        name:
+          type: string
+          description: Device name and store number
+          example: Store #1247 - Atlanta
+        location:
+          type: string
+          description: Physical location of the device
+          example: Atlanta, GA
+        currentTemp:
+          type: number
+          format: float
+          description: Current temperature in Fahrenheit
+          example: 72.4
+        status:
+          type: string
+          enum: [normal, warning, critical]
+          description: Current device status
+          example: normal
+        lastUpdate:
+          type: string
+          description: Human-readable time since last update
+          example: 2 min ago
+        lastUpdateTimestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of last update
+          example: "2025-10-28T14:30:00Z"
+
+    TemperatureDataPoint:
+      type: object
+      required:
+        - time
+        - temperature
+        - humidity
+      properties:
+        time:
+          type: string
+          description: Time label for the data point
+          example: "14:00"
+        temperature:
+          type: number
+          format: float
+          description: Temperature in Fahrenheit
+          example: 72.4
+        humidity:
+          type: number
+          format: float
+          description: Relative humidity percentage
+          example: 55.2
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+          example: "2025-10-28T14:00:00Z"
+
+    DeviceStats:
+      type: object
+      required:
+        - normalCount
+        - warningCount
+        - criticalCount
+        - avgTemp
+        - totalDevices
+      properties:
+        normalCount:
+          type: integer
+          description: Number of devices with normal status
+          example: 4
+        warningCount:
+          type: integer
+          description: Number of devices with warning status
+          example: 1
+        criticalCount:
+          type: integer
+          description: Number of devices with critical status
+          example: 1
+        avgTemp:
+          type: string
+          description: Average temperature across all devices
+          example: "75.4"
+        totalDevices:
+          type: integer
+          description: Total number of monitored devices
+          example: 6
+
+    Alert:
+      type: object
+      required:
+        - id
+        - type
+        - device
+        - location
+        - message
+        - time
+        - action
+      properties:
+        id:
+          type: string
+          description: Unique alert identifier
+          example: RT-ATL-001-critical
+        type:
+          type: string
+          enum: [critical, warning, info]
+          description: Alert severity level
+          example: critical
+        device:
+          type: string
+          description: Associated device name
+          example: Store #3421 - Tampa
+        location:
+          type: string
+          description: Location of the alert
+          example: Tampa, FL
+        message:
+          type: string
+          description: Alert message
+          example: Temperature critically high at 91.5°F
+        time:
+          type: string
+          description: Human-readable time since alert creation
+          example: 30 sec ago
+        action:
+          type: string
+          description: Recommended action
+          example: Check HVAC system immediately
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of alert creation
+          example: "2025-10-28T14:31:30Z"
+
+    StateDistribution:
+      type: object
+      required:
+        - state
+        - name
+        - count
+        - percentage
+        - color
+      properties:
+        state:
+          type: string
+          description: Two-letter state code
+          example: GA
+        name:
+          type: string
+          description: Full state name
+          example: Georgia
+        count:
+          type: integer
+          description: Number of plates detected from this state
+          example: 342
+        percentage:
+          type: number
+          format: float
+          description: Percentage of total detections
+          example: 28.5
+        color:
+          type: string
+          description: Hex color code for visualization
+          example: "#dc2626"
+
+    RecentPlate:
+      type: object
+      required:
+        - id
+        - state
+        - plateNumber
+        - location
+        - time
+        - confidence
+      properties:
+        id:
+          type: integer
+          description: Unique detection identifier
+          example: 1
+        state:
+          type: string
+          description: Two-letter state code
+          example: GA
+        plateNumber:
+          type: string
+          description: Partially masked plate number
+          example: ABC***
+        location:
+          type: string
+          description: Detection location (store and pump)
+          example: Store #1247 - Pump 3
+        time:
+          type: string
+          description: Human-readable time since detection
+          example: 15 sec ago
+        confidence:
+          type: integer
+          description: Detection confidence percentage (0-100)
+          example: 99
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of detection
+          example: "2025-10-28T14:31:45Z"
+
+    StateStats:
+      type: object
+      required:
+        - totalDetected
+        - uniqueStates
+        - averagePerHour
+        - trend
+      properties:
+        totalDetected:
+          type: integer
+          description: Total number of plates detected
+          example: 1200
+        uniqueStates:
+          type: integer
+          description: Number of unique states detected
+          example: 24
+        averagePerHour:
+          type: integer
+          description: Average detections per hour
+          example: 50
+        trend:
+          type: string
+          description: Trend indicator (e.g., +15%, -5%)
+          example: "+15%"
+
+    ObjectDetection:
+      type: object
+      required:
+        - object
+        - count
+        - trend
+        - icon
+        - color
+      properties:
+        object:
+          type: string
+          description: Type of object detected
+          example: Vehicles
+        count:
+          type: integer
+          description: Number of detections
+          example: 1247
+        trend:
+          type: string
+          description: Trend indicator (e.g., +12%, -3%)
+          example: "+12%"
+        icon:
+          type: string
+          description: Icon name for UI display
+          example: Car
+        color:
+          type: string
+          description: Hex color code for visualization
+          example: "#3b82f6"
+
+    HourlyDetection:
+      type: object
+      required:
+        - hour
+        - count
+      properties:
+        hour:
+          type: string
+          description: Hour label (24-hour format)
+          example: "14:00"
+        count:
+          type: integer
+          description: Number of detections in this hour
+          example: 176
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp for the hour
+          example: "2025-10-28T14:00:00Z"
+
+    RecentDetection:
+      type: object
+      required:
+        - id
+        - type
+        - location
+        - time
+        - confidence
+      properties:
+        id:
+          type: integer
+          description: Unique detection identifier
+          example: 1
+        type:
+          type: string
+          description: Type of object detected
+          example: Vehicle
+        location:
+          type: string
+          description: Detection location (store and area)
+          example: Store #1247 - Pump 3
+        time:
+          type: string
+          description: Human-readable time since detection
+          example: 30 sec ago
+        confidence:
+          type: integer
+          description: Detection confidence percentage (0-100)
+          example: 98
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp of detection
+          example: "2025-10-28T14:31:30Z"
+
+    Error:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: DEVICE_NOT_FOUND
+            message:
+              type: string
+              description: Human-readable error message
+              example: Device with ID RT-ATL-999 not found
+            details:
+              type: object
+              description: Additional error details
+              additionalProperties: true
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              code: NOT_FOUND
+              message: The requested resource was not found
+
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              code: BAD_REQUEST
+              message: Invalid request parameters
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            success: false
+            error:
+              code: INTERNAL_ERROR
+              message: An unexpected error occurred
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for API authentication
+
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
