@@ -100,7 +100,7 @@ const MAX_IMAGE_HEIGHT = 300;
 /**
  * Detection Viewer Component with Live SSE streaming
  */
-export function DetectionViewer() {
+export function DetectionViewer({ alertsEnabled = false }: { alertsEnabled?: boolean }) {
     const [status, setStatus] = useState<string>('Connecting...');
     const [isLive, setIsLive] = useState<boolean>(true);
     // Map<stream_id, DetectionCard> - only latest frame per stream
@@ -275,8 +275,8 @@ export function DetectionViewer() {
                 // Clean up pending detections for this frame
                 pendingDetectionsRef.current.delete(frameId);
 
-                // Show toast notification for new stream_id (only once per stream_id)
-                if (wasStreamIdNew && isNewStreamId) {
+                // Show toast notification for new stream_id (only once per stream_id) if alerts are enabled
+                if (wasStreamIdNew && isNewStreamId && alertsEnabled) {
                     knownStreamIdsRef.current.add(stream_id);
                     toast(`New stream: ${stream_id}`, {
                         duration: 3000,

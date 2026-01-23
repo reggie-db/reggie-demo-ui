@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, Bell, Camera, Car, CheckCircle, Cpu, Database, LayoutDashboard, Loader2, MapPin, Menu, Thermometer, Upload, Video } from 'lucide-react';
+import { Activity, AlertTriangle, Bell, Camera, Car, CheckCircle, Cpu, Database, LayoutDashboard, Loader2, MapPin, Menu, Package, Thermometer, Upload, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { AlertsPanel } from './components/AlertsPanel';
 import { DetectionViewer } from './components/DetectionViewer';
 import { DeviceGrid } from './components/DeviceGrid';
 import { ImageUpload } from './components/ImageUpload';
+import { Inventory } from './components/Inventory';
 import { LazyDataGrid } from './components/LazyDataGrid';
 import { LicensePlateStatesPanel } from './components/LicensePlateStatesPanel';
 import { TemperatureChart } from './components/TemperatureChart';
@@ -32,10 +33,22 @@ export default function App() {
   const [stats, setStats] = useState<DeviceStats>({ normalCount: 0, warningCount: 0, criticalCount: 0, avgTemp: '0', totalDevices: 0 });
   const [loading, setLoading] = useState(true);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [alertsEnabled, setAlertsEnabled] = useState(true);
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [userRole, setUserRole] = useState<'Admin' | 'Store Manager'>('Admin');
 
   // Get activeView from URL, default to 'overview'
   const activeView = location.pathname.slice(1) || 'overview';
+  
+  // Restricted views for Store Managers
+  const restrictedViews = ['search', 'live', 'plates', 'detections'];
+  const isRestrictedView = restrictedViews.includes(activeView);
+  
+  // Redirect Store Managers away from restricted views
+  useEffect(() => {
+    if (userRole === 'Store Manager' && isRestrictedView) {
+      navigate('/overview', { replace: true });
+    }
+  }, [userRole, activeView, isRestrictedView, navigate]);
 
   // Initialize WebSocket connection (replaces mock detection alerts)
   useEffect(() => {
@@ -149,8 +162,16 @@ export default function App() {
   // Navigation items component
   const NavItems = ({ onItemClick }: { onItemClick?: () => void }) => {
     const handleNavigation = (view: string) => {
+      // Prevent navigation to restricted views for Store Managers
+      if (userRole === 'Store Manager' && restrictedViews.includes(view)) {
+        return;
+      }
       navigate(`/${view}`);
       onItemClick?.();
+    };
+    
+    const isViewRestricted = (view: string) => {
+      return userRole === 'Store Manager' && restrictedViews.includes(view);
     };
 
     return (
@@ -179,38 +200,54 @@ export default function App() {
           <Bell className="w-4 h-4" />
           Alerts
         </Button>
+        {!isViewRestricted('detections') && (
+          <Button
+            variant={activeView === 'detections' ? 'default' : 'ghost'}
+            className="justify-start gap-2"
+            onClick={() => handleNavigation('detections')}
+          >
+            <Camera className="w-4 h-4" />
+            Detections
+          </Button>
+        )}
+        {!isViewRestricted('plates') && (
+          <Button
+            variant={activeView === 'plates' ? 'default' : 'ghost'}
+            className="justify-start gap-2"
+            onClick={() => handleNavigation('plates')}
+          >
+            <Car className="w-4 h-4" />
+            License Plates
+          </Button>
+        )}
+        {!isViewRestricted('search') && (
+          <Button
+            variant={activeView === 'search' ? 'default' : 'ghost'}
+            className="justify-start gap-2"
+            onClick={() => handleNavigation('search')}
+          >
+            <Database className="w-4 h-4" />
+            Data Search
+          </Button>
+        )}
         <Button
-          variant={activeView === 'detections' ? 'default' : 'ghost'}
+          variant={activeView === 'inventory' ? 'default' : 'ghost'}
           className="justify-start gap-2"
-          onClick={() => handleNavigation('detections')}
+          onClick={() => handleNavigation('inventory')}
         >
-          <Camera className="w-4 h-4" />
-          Detections
+          <Package className="w-4 h-4" />
+          Inventory
         </Button>
-        <Button
-          variant={activeView === 'plates' ? 'default' : 'ghost'}
-          className="justify-start gap-2"
-          onClick={() => handleNavigation('plates')}
-        >
-          <Car className="w-4 h-4" />
-          License Plates
-        </Button>
-        <Button
-          variant={activeView === 'search' ? 'default' : 'ghost'}
-          className="justify-start gap-2"
-          onClick={() => handleNavigation('search')}
-        >
-          <Database className="w-4 h-4" />
-          Data Search
-        </Button>
-        <Button
-          variant={activeView === 'live' ? 'default' : 'ghost'}
-          className="justify-start gap-2"
-          onClick={() => handleNavigation('live')}
-        >
-          <Video className="w-4 h-4" />
-          Live
-        </Button>
+        {!isViewRestricted('live') && (
+          <Button
+            variant={activeView === 'live' ? 'default' : 'ghost'}
+            className="justify-start gap-2"
+            onClick={() => handleNavigation('live')}
+          >
+            <Video className="w-4 h-4" />
+            Live
+          </Button>
+        )}
         <Button
           variant={activeView === 'upload' ? 'default' : 'ghost'}
           className="justify-start gap-2"
@@ -304,12 +341,22 @@ export default function App() {
                     {activeView === 'detections' && 'Detections'}
                     {activeView === 'plates' && 'License Plates'}
                     {activeView === 'search' && 'Data Search'}
+                    {activeView === 'inventory' && 'Inventory'}
                     {activeView === 'live' && 'Live Stream'}
                     {activeView === 'upload' && 'Image Upload'}
                   </h1>
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                <Select value={userRole} onValueChange={(value: string) => setUserRole(value as 'Admin' | 'Store Manager')}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Store Manager">Store Manager</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Badge variant="outline" className="gap-1">
                   <Activity className="w-3 h-3" />
                   <span className="hidden sm:inline">Live</span>
@@ -556,7 +603,7 @@ export default function App() {
             )}
 
             {activeView === 'detections' && (
-              <DetectionViewer />
+              <DetectionViewer alertsEnabled={alertsEnabled} />
             )}
 
             {activeView === 'plates' && (
@@ -565,6 +612,10 @@ export default function App() {
 
             {activeView === 'search' && (
               <LazyDataGrid />
+            )}
+
+            {activeView === 'inventory' && (
+              <Inventory />
             )}
 
             {activeView === 'live' && (
