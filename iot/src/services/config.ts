@@ -14,6 +14,17 @@ export const USE_MOCK_DATA = false;
 export const API_BASE_URL = "http://localhost:8000";
 
 /**
+ * WebSocket URL for real-time event streaming
+ * Change this based on your environment
+ */
+export const WS_URL = (() => {
+  // Option 1: true UUID (requires modern browser)
+  const clientId = 'client_' + Math.random().toString(36).substring(2, 10);
+
+  return `wss://kws.lfpconnect.io/out?clientId=${clientId}&topic=sink&keyType=string&offsetResetStrategy=latest`;
+})();
+
+/**
  * API authentication configuration
  * Set these values based on your authentication method
  */

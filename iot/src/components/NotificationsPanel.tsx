@@ -5,12 +5,68 @@ import { Camera } from 'lucide-react';
 import { DetectionAlert } from '../hooks/useDetectionAlerts';
 import { formatTimestamp } from '../utils/dateUtils';
 
-interface NotificationsPanelProps {
-  notifications: DetectionAlert[];
+interface NotificationWithData extends DetectionAlert {
+  data?: Record<string, any>;
 }
 
+interface NotificationsPanelProps {
+  notifications: NotificationWithData[];
+}
+
+/**
+ * Convert a key to title case
+ */
+const toTitleCase = (str: string): string => {
+  return str
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
+/**
+ * Convert an object to an HTML table
+ */
+const objectToHtmlTable = (obj: Record<string, any>): JSX.Element => {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) {
+    return <p className="text-sm text-slate-500">No data available</p>;
+  }
+
+  const headers = keys.map(key => toTitleCase(key));
+  const values = keys.map(key => {
+    const value = obj[key];
+    if (value === null || value === undefined) {
+      return '';
+    }
+    return String(value);
+  });
+  
+  return (
+    <table className="w-full text-xs border-collapse mt-2">
+      <thead>
+        <tr className="border-b border-slate-200">
+          {headers.map((header, idx) => (
+            <th key={idx} className="text-left p-2 font-semibold text-slate-700">
+              {header}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          {values.map((value, idx) => (
+            <td key={idx} className="p-2 text-slate-600 border-b border-slate-100">
+              {value}
+            </td>
+          ))}
+        </tr>
+      </tbody>
+    </table>
+  );
+};
+
 export function NotificationsPanel({ notifications }: NotificationsPanelProps) {
-  const [sortedNotifications, setSortedNotifications] = useState<DetectionAlert[]>([]);
+  const [sortedNotifications, setSortedNotifications] = useState<NotificationWithData[]>([]);
 
   useEffect(() => {
     // Sort notifications by timestamp (newest first)
@@ -73,6 +129,11 @@ export function NotificationsPanel({ notifications }: NotificationsPanelProps) {
                       <p className="text-xs text-slate-500 mt-2">
                         {formatTimestamp(notification.timestamp)}
                       </p>
+                      {notification.data && (
+                        <div className="mt-3 p-2 bg-slate-50 rounded border border-slate-200 overflow-x-auto">
+                          {objectToHtmlTable(notification.data)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
