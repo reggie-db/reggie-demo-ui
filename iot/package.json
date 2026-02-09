@@ -13,6 +13,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.11",
     "@types/react-syntax-highlighter": "^15.5.13",
+    "any-date-parser": "^2.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -29,6 +30,7 @@
     "react-hot-toast": "^2.6.0",
     "react-resizable-panels": "^3.0.3",
     "react-router-dom": "^7.9.5",
+    "react-select": "^5.10.2",
     "react-syntax-highlighter": "^16.1.0",
     "recharts": "^3.1.2",
     "sonner": "^2.0.6",

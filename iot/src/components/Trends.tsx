@@ -1,7 +1,7 @@
 // Trends Component
 // Displays frame coverage trends over time with filtering
 
-import { Loader2 } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
@@ -13,9 +13,13 @@ import {
   getFrameCoverage,
 } from '../services/frameCoverageService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { DateTimeFilterInput } from './ui/date-time-filter-input';
 import { TokenInput } from './ui/token-input';
+import { Button } from './ui/button';
+import { cn } from './ui/utils';
 
 interface ChartDataPoint {
   time: string;
@@ -28,6 +32,7 @@ export function Trends() {
   const [error, setError] = useState<string | null>(null);
   const [loadingOptions, setLoadingOptions] = useState(false);
   const isInitialMount = useRef(true);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // Available options from /values endpoints
   const [availableLabels, setAvailableLabels] = useState<string[]>([]);
@@ -70,11 +75,6 @@ export function Trends() {
         setAvailableLabels(labels);
         setAvailableStoreIds(storeIds);
         setAvailableDeviceNames(deviceNames);
-        console.log('Options loaded:', { 
-          labels: { count: labels.length, sample: labels.slice(0, 5) }, 
-          storeIds: { count: storeIds.length, sample: storeIds.slice(0, 5) }, 
-          deviceNames: { count: deviceNames.length, sample: deviceNames.slice(0, 5) },
-        });
       } catch (err) {
         console.error('Error fetching available options:', err);
         // Set empty arrays on error so UI doesn't break
@@ -228,19 +228,6 @@ export function Trends() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-slate-900">Frame Coverage Trends</h2>
-          <p className="text-sm text-slate-600 mt-1">Analyze detection coverage over time by stream and label</p>
-        </div>
-        {loading && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Loading...</span>
-          </div>
-        )}
-      </div>
-
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -248,8 +235,8 @@ export function Trends() {
           <CardDescription>Configure coverage analysis parameters</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="space-y-2 md:col-span-6">
               <Label htmlFor="label">Labels</Label>
               <TokenInput
                 value={filters.label || []}
@@ -260,40 +247,7 @@ export function Trends() {
                 restrictToOptions={true}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="min_confidence">Min Confidence</Label>
-              <Input
-                id="min_confidence"
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={filters.min_confidence || 0.7}
-                onChange={(e) => handleFilterChange('min_confidence', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="interval">Interval</Label>
-              <Input
-                id="interval"
-                value={filters.interval || '15 minutes'}
-                onChange={(e) => handleFilterChange('interval', e.target.value)}
-                placeholder="15 minutes"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="max_deviation">Max Deviation</Label>
-              <Input
-                id="max_deviation"
-                type="number"
-                step="0.01"
-                min="0"
-                max="1"
-                value={filters.max_deviation || 0.2}
-                onChange={(e) => handleFilterChange('max_deviation', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-3">
               <Label htmlFor="store_id">Store IDs</Label>
               <TokenInput
                 value={filters.store_id || []}
@@ -304,7 +258,7 @@ export function Trends() {
                 restrictToOptions={true}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-2 md:col-span-3">
               <Label htmlFor="device_name">Device Names</Label>
               <TokenInput
                 value={filters.device_name || []}
@@ -315,23 +269,80 @@ export function Trends() {
                 restrictToOptions={true}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="start">Start Time (ISO)</Label>
-              <Input
+            <div className="space-y-2 md:col-span-4">
+              <Label htmlFor="start">Start</Label>
+              <DateTimeFilterInput
                 id="start"
-                type="datetime-local"
-                value={filters.start ? new Date(filters.start).toISOString().slice(0, 16) : ''}
-                onChange={(e) => handleFilterChange('start', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                value={filters.start}
+                onValueChange={(next) => handleFilterChange('start', next)}
+                placeholder="e.g. yesterday 5pm, 2026-02-01 13:00"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="end">End Time (ISO)</Label>
-              <Input
+            <div className="space-y-2 md:col-span-4">
+              <Label htmlFor="end">End</Label>
+              <DateTimeFilterInput
                 id="end"
-                type="datetime-local"
-                value={filters.end ? new Date(filters.end).toISOString().slice(0, 16) : ''}
-                onChange={(e) => handleFilterChange('end', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
+                value={filters.end}
+                onValueChange={(next) => handleFilterChange('end', next)}
+                placeholder="e.g. now, 2 hours ago, 2026-02-01 18:30"
               />
+            </div>
+            <div className="space-y-2 md:col-span-4">
+              <Label htmlFor="interval">Interval</Label>
+              <Input
+                id="interval"
+                value={filters.interval || '15 minutes'}
+                onChange={(e) => handleFilterChange('interval', e.target.value)}
+                placeholder="15 minutes"
+              />
+            </div>
+
+            <div className="md:col-span-12">
+              <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-600">Advanced</div>
+                  <CollapsibleTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" className="gap-2">
+                      {advancedOpen ? 'Hide advanced' : 'Show advanced'}
+                      <ChevronDown
+                        className={cn(
+                          "size-4 transition-transform",
+                          advancedOpen ? "rotate-180" : undefined,
+                        )}
+                      />
+                    </Button>
+                  </CollapsibleTrigger>
+                </div>
+
+                <CollapsibleContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="space-y-2 md:col-span-3">
+                      <Label htmlFor="min_confidence">Min Confidence</Label>
+                      <Input
+                        id="min_confidence"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="1"
+                        value={filters.min_confidence || 0.7}
+                        onChange={(e) => handleFilterChange('min_confidence', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-3">
+                      <Label htmlFor="max_deviation">Max Deviation</Label>
+                      <Input
+                        id="max_deviation"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="1"
+                        value={filters.max_deviation || 0.2}
+                        onChange={(e) => handleFilterChange('max_deviation', parseFloat(e.target.value) || 0)}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
         </CardContent>

@@ -4,7 +4,7 @@
 import React, { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ConstrainedSelect } from './ui/react-select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { AlertCircle, Clock, Truck, Pizza } from 'lucide-react';
@@ -168,17 +168,22 @@ export function Inventory() {
           <h2 className="text-2xl font-semibold text-slate-900">Inventory Management</h2>
           <p className="text-sm text-slate-600 mt-1">Monitor truck parking capacity and pizza inventory across stores</p>
         </div>
-        <Select value={selectedStore} onValueChange={setSelectedStore}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select store" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="1">Store 1</SelectItem>
-            <SelectItem value="2">Store 2</SelectItem>
-            <SelectItem value="3">Store 3</SelectItem>
-            <SelectItem value="4">Store 4</SelectItem>
-          </SelectContent>
-        </Select>
+        <ConstrainedSelect
+          className="w-[180px]"
+          value={selectedStore}
+          onValueChange={(value) => {
+            if (value) {
+              setSelectedStore(value);
+            }
+          }}
+          placeholder="Select store"
+          options={[
+            { value: "1", label: "Store 1" },
+            { value: "2", label: "Store 2" },
+            { value: "3", label: "Store 3" },
+            { value: "4", label: "Store 4" },
+          ]}
+        />
       </div>
 
       <Tabs defaultValue="pizza" className="space-y-4">

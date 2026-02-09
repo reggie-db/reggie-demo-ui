@@ -17,7 +17,7 @@ import { WebcamStream } from './components/WebcamStream';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select';
+import { ConstrainedSelect } from './components/ui/react-select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './components/ui/sheet';
 import { Switch } from './components/ui/switch';
 import { Device, DeviceStats, generateHistoricalData, getDeviceById, getDevices, getDeviceStats, TemperatureDataPoint } from './services/deviceService';
@@ -368,15 +368,20 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <Select value={userRole} onValueChange={(value: string) => setUserRole(value as 'Admin' | 'Store Manager')}>
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Store Manager">Store Manager</SelectItem>
-                  </SelectContent>
-                </Select>
+                <ConstrainedSelect<'Admin' | 'Store Manager'>
+                  className="w-[160px]"
+                  value={userRole}
+                  onValueChange={(value) => {
+                    if (value) {
+                      setUserRole(value);
+                    }
+                  }}
+                  options={[
+                    { value: "Admin", label: "Admin" },
+                    { value: "Store Manager", label: "Store Manager" },
+                  ]}
+                  isSearchable={false}
+                />
                 <Badge variant="outline" className="gap-1">
                   <Activity className="w-3 h-3" />
                   <span className="hidden sm:inline">Live</span>
@@ -515,28 +520,35 @@ export default function App() {
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Select value={selectedDevice} onValueChange={setSelectedDevice}>
-                            <SelectTrigger className="w-[200px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {devices.map(device => (
-                                <SelectItem key={device.id} value={device.id}>
-                                  {device.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Select value={timeRange} onValueChange={setTimeRange}>
-                            <SelectTrigger className="w-[100px]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="24h">24 Hours</SelectItem>
-                              <SelectItem value="7d">7 Days</SelectItem>
-                              <SelectItem value="30d">30 Days</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <ConstrainedSelect
+                            className="w-[200px]"
+                            value={selectedDevice}
+                            onValueChange={(value) => {
+                              if (value) {
+                                setSelectedDevice(value);
+                              }
+                            }}
+                            options={devices.map((device) => ({
+                              value: device.id,
+                              label: device.name,
+                            }))}
+                            placeholder="Select device"
+                          />
+                          <ConstrainedSelect
+                            className="w-[100px]"
+                            value={timeRange}
+                            onValueChange={(value) => {
+                              if (value) {
+                                setTimeRange(value);
+                              }
+                            }}
+                            options={[
+                              { value: "24h", label: "24 Hours" },
+                              { value: "7d", label: "7 Days" },
+                              { value: "30d", label: "30 Days" },
+                            ]}
+                            isSearchable={false}
+                          />
                         </div>
                       </div>
                     </CardHeader>
