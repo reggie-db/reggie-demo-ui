@@ -181,101 +181,17 @@ export function Inventory() {
         </Select>
       </div>
 
-      <Tabs defaultValue="truck" className="space-y-4">
+      <Tabs defaultValue="pizza" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="truck">
-            <Truck className="w-4 h-4 mr-2" />
-            Truck Parking
-          </TabsTrigger>
           <TabsTrigger value="pizza">
             <Pizza className="w-4 h-4 mr-2" />
             Pizza Inventory
           </TabsTrigger>
+          <TabsTrigger value="truck">
+            <Truck className="w-4 h-4 mr-2" />
+            Truck Parking
+          </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="truck" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Truck Parking Capacity - Store {storeId}</CardTitle>
-              <CardDescription>Percentage capacity over time with future projections</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={truckData}>
-                  <defs>
-                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorUpper" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="colorLower" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis 
-                    dataKey="time" 
-                    stroke="#64748b"
-                    tick={{ fill: '#64748b', fontSize: 12 }}
-                  />
-                  <YAxis 
-                    stroke="#64748b"
-                    tick={{ fill: '#64748b', fontSize: 12 }}
-                    domain={[0, 100]}
-                    label={{ value: 'Capacity %', angle: -90, position: 'insideLeft', fill: '#64748b' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'white', 
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '6px'
-                    }}
-                  />
-                  <Legend />
-                  <Area
-                    type="monotone"
-                    dataKey="upperBound"
-                    stroke="#10b981"
-                    strokeWidth={2}
-                    fill="url(#colorUpper)"
-                    name="Upper Bound (Projected)"
-                    strokeDasharray="5 5"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    fill="url(#colorValue)"
-                    name="Current/Projected Capacity"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="lowerBound"
-                    stroke="#ef4444"
-                    strokeWidth={2}
-                    fill="url(#colorLower)"
-                    name="Lower Bound (Projected)"
-                    strokeDasharray="5 5"
-                  />
-                  <ReferenceLine 
-                    x={nowTime} 
-                    stroke="#94a3b8" 
-                    strokeDasharray="3 3"
-                    label={{ value: "Now", position: "top", fill: "#64748b" }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-              <div className="mt-4 text-sm text-slate-600">
-                <p>Projections are based on historical patterns and predictive modeling. Upper and lower bounds represent 95% confidence intervals.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="pizza" className="space-y-4">
           <Card>
@@ -416,6 +332,90 @@ export function Inventory() {
                   )}
                 </div>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="truck" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Truck Parking Capacity - Store {storeId}</CardTitle>
+              <CardDescription>Percentage capacity over time with future projections</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <AreaChart data={truckData}>
+                  <defs>
+                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorUpper" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="colorLower" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
+                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="time" 
+                    stroke="#64748b"
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="#64748b"
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    domain={[0, 100]}
+                    label={{ value: 'Capacity %', angle: -90, position: 'insideLeft', fill: '#64748b' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'white', 
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Legend />
+                  <Area
+                    type="monotone"
+                    dataKey="upperBound"
+                    stroke="#10b981"
+                    strokeWidth={2}
+                    fill="url(#colorUpper)"
+                    name="Upper Bound (Projected)"
+                    strokeDasharray="5 5"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#colorValue)"
+                    name="Current/Projected Capacity"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="lowerBound"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fill="url(#colorLower)"
+                    name="Lower Bound (Projected)"
+                    strokeDasharray="5 5"
+                  />
+                  <ReferenceLine 
+                    x={nowTime} 
+                    stroke="#94a3b8" 
+                    strokeDasharray="3 3"
+                    label={{ value: "Now", position: "top", fill: "#64748b" }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+              <div className="mt-4 text-sm text-slate-600">
+                <p>Projections are based on historical patterns and predictive modeling. Upper and lower bounds represent 95% confidence intervals.</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

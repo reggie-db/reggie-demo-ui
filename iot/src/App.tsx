@@ -1,7 +1,7 @@
-import { Activity, AlertTriangle, Bell, Camera, Car, CheckCircle, Cpu, Database, LayoutDashboard, Loader2, MapPin, Menu, Package, Thermometer, Upload, Video } from 'lucide-react';
+import { Activity, AlertTriangle, Bell, Camera, Car, CheckCircle, Cpu, Database, LayoutDashboard, Loader2, MapPin, Menu, Package, Thermometer, TrendingUp, Upload, Video } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Toaster } from 'react-hot-toast';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AIChatButton } from './components/AIChatButton';
 import { AlertsPanel } from './components/AlertsPanel';
@@ -10,6 +10,7 @@ import { DeviceGrid } from './components/DeviceGrid';
 import { ImageUpload } from './components/ImageUpload';
 import { Inventory } from './components/Inventory';
 import { LazyDataGrid } from './components/LazyDataGrid';
+import { Trends } from './components/Trends';
 import { LicensePlateStatesPanel } from './components/LicensePlateStatesPanel';
 import { TemperatureChart } from './components/TemperatureChart';
 import { WebcamStream } from './components/WebcamStream';
@@ -25,6 +26,8 @@ import { closeWebSocket, initializeWebSocket, setToastsEnabled } from './service
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const brandName = searchParams.get('brandName')?.trim() || '';
   const [selectedDevice, setSelectedDevice] = useState('RT-ATL-001');
   const [timeRange, setTimeRange] = useState('24h');
   const [devices, setDevices] = useState<Device[]>([]);
@@ -46,9 +49,10 @@ export default function App() {
   // Redirect Store Managers away from restricted views
   useEffect(() => {
     if (userRole === 'Store Manager' && isRestrictedView) {
-      navigate('/overview', { replace: true });
+      const queryString = brandName ? `?brandName=${encodeURIComponent(brandName)}` : '';
+      navigate(`/overview${queryString}`, { replace: true });
     }
-  }, [userRole, activeView, isRestrictedView, navigate]);
+  }, [userRole, activeView, isRestrictedView, navigate, brandName]);
 
   // Initialize WebSocket connection (replaces mock detection alerts)
   useEffect(() => {
@@ -78,9 +82,10 @@ export default function App() {
   // Initialize URL if on root path
   useEffect(() => {
     if (location.pathname === '/') {
-      navigate('/overview', { replace: true });
+      const queryString = brandName ? `?brandName=${encodeURIComponent(brandName)}` : '';
+      navigate(`/overview${queryString}`, { replace: true });
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, brandName]);
 
   // Fetch devices on mount
   useEffect(() => {
@@ -166,7 +171,9 @@ export default function App() {
       if (userRole === 'Store Manager' && restrictedViews.includes(view)) {
         return;
       }
-      navigate(`/${view}`);
+      // Preserve brandName query parameter when navigating
+      const queryString = brandName ? `?brandName=${encodeURIComponent(brandName)}` : '';
+      navigate(`/${view}${queryString}`);
       onItemClick?.();
     };
     
@@ -238,6 +245,14 @@ export default function App() {
           <Package className="w-4 h-4" />
           Inventory
         </Button>
+        <Button
+          variant={activeView === 'trends' ? 'default' : 'ghost'}
+          className="justify-start gap-2"
+          onClick={() => handleNavigation('trends')}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Trends
+        </Button>
         {!isViewRestricted('live') && (
           <Button
             variant={activeView === 'live' ? 'default' : 'ghost'}
@@ -281,13 +296,15 @@ export default function App() {
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-white border-r border-slate-200">
         <div className="p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <img
-              src="/icon.png"
-              alt="RaceTrac Logo"
-              className="w-10 h-10 rounded-lg object-cover"
-            />
+            {!brandName && (
+              <img
+                src="/icon.png"
+                alt="RaceTrac Logo"
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+            )}
             <div>
-              <h2 className="text-slate-900">RaceTrac</h2>
+              <h2 className="text-slate-900">{brandName || 'RaceTrac'}</h2>
               <p className="text-xs text-slate-600">IoT Monitoring</p>
             </div>
           </div>
@@ -322,13 +339,15 @@ export default function App() {
                 </Sheet>
 
                 {/* Mobile/Tablet Logo */}
-                <img
-                  src="/icon.png"
-                  alt="RaceTrac Logo"
-                  className="lg:hidden w-10 h-10 rounded-lg object-cover"
-                />
+                {!brandName && (
+                  <img
+                    src="/icon.png"
+                    alt="RaceTrac Logo"
+                    className="lg:hidden w-10 h-10 rounded-lg object-cover"
+                  />
+                )}
                 <div className="lg:hidden">
-                  <h1 className="text-slate-900">RaceTrac Petroleum</h1>
+                  <h1 className="text-slate-900">{brandName || 'RaceTrac Petroleum'}</h1>
                   <p className="text-sm text-slate-600 hidden sm:block">IoT Temperature Monitoring System</p>
                 </div>
 
@@ -342,6 +361,7 @@ export default function App() {
                     {activeView === 'plates' && 'License Plates'}
                     {activeView === 'search' && 'Data Search'}
                     {activeView === 'inventory' && 'Inventory'}
+                    {activeView === 'trends' && 'Trends'}
                     {activeView === 'live' && 'Live Stream'}
                     {activeView === 'upload' && 'Image Upload'}
                   </h1>
@@ -616,6 +636,10 @@ export default function App() {
 
             {activeView === 'inventory' && (
               <Inventory />
+            )}
+
+            {activeView === 'trends' && (
+              <Trends />
             )}
 
             {activeView === 'live' && (
