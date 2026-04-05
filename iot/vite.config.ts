@@ -64,11 +64,7 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    allowedHosts: [
-      'dbxapps.com',
-      '.dbxapps.com',
-      'localhost',
-    ],
+    allowedHosts: true,
     cors: {
       origin: [
         'http://localhost:5173',

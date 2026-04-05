@@ -7,7 +7,7 @@ import { API_BASE_URL, API_CONFIG, getAuthHeaders } from './config';
  * Generate or retrieve a session identifier
  * Session ID persists for the browser session and is stored in sessionStorage
  */
-const getSessionId = (): string => {
+export const getSessionId = (): string => {
     const storageKey = 'react_session_id';
     let sessionId = sessionStorage.getItem(storageKey);
 

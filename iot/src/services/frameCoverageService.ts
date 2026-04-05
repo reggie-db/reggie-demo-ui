@@ -1,7 +1,8 @@
 // Frame Coverage Service
 // Handles API calls for frame coverage analytics
 
-import { apiCall } from './serviceUtils';
+import { API_BASE_URL, getAuthHeaders } from './config';
+import { apiCall, buildRequestHeaders } from './serviceUtils';
 
 export interface FrameCoverageBucket {
   store_id: number | string | null;
@@ -27,12 +28,15 @@ export interface FrameCoverageParams {
   max_deviation?: number;
 }
 
-/**
- * Get frame coverage buckets from the API
- */
-export async function getFrameCoverage(
-  params: FrameCoverageParams = {}
-): Promise<FrameCoverageBucket[]> {
+type _RequestOptions = {
+  /**
+   * Optional AbortSignal to cancel an in-flight request.
+   * This is critical for keeping filters and results in sync when requests are slow.
+   */
+  signal?: AbortSignal;
+};
+
+const _buildFrameCoverageEndpoint = (params: FrameCoverageParams): string => {
   const queryParams = new URLSearchParams();
 
   // Add array parameters (repeat parameter for multiple values)
@@ -66,7 +70,49 @@ export async function getFrameCoverage(
     queryParams.append('max_deviation', params.max_deviation.toString());
   }
 
-  const endpoint = `/frames/coverage${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return `/frames/coverage${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+};
+
+/**
+ * Get frame coverage buckets from the API
+ */
+export async function getFrameCoverage(
+  params: FrameCoverageParams = {},
+  options: _RequestOptions = {},
+): Promise<FrameCoverageBucket[]> {
+  const endpoint = _buildFrameCoverageEndpoint(params);
+
+  // If we need cancellation, avoid apiCall's internal controller and use fetch directly.
+  if (options.signal) {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: buildRequestHeaders({
+        ...getAuthHeaders(),
+      }),
+      signal: options.signal,
+    });
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '');
+      throw new Error(bodyText || `Failed to fetch frame coverage (HTTP ${response.status})`);
+    }
+
+    const responseData = await response.json();
+
+    // Match apiCall behavior: unwrap { success, data } if present.
+    if (
+      responseData &&
+      typeof responseData === 'object' &&
+      'success' in responseData &&
+      'data' in responseData
+    ) {
+      return responseData.data as FrameCoverageBucket[];
+    }
+
+    return responseData as FrameCoverageBucket[];
+  }
+
   return await apiCall<FrameCoverageBucket[]>(endpoint);
 }
 

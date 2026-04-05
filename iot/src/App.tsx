@@ -4,11 +4,12 @@ import { Toaster } from 'react-hot-toast';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AIChatButton } from './components/AIChatButton';
-import { AlertsPanel } from './components/AlertsPanel';
 import { DetectionViewer } from './components/DetectionViewer';
 import { DeviceGrid } from './components/DeviceGrid';
 import { ImageUpload } from './components/ImageUpload';
 import { Inventory } from './components/Inventory';
+import { JoltAppMock } from './components/JoltAppMock';
+import { JoltRules } from './components/JoltRules';
 import { LazyDataGrid } from './components/LazyDataGrid';
 import { Trends } from './components/Trends';
 import { LicensePlateStatesPanel } from './components/LicensePlateStatesPanel';
@@ -153,12 +154,23 @@ export default function App() {
   }, [selectedDevice, timeRange]);
 
   // Show loading state
-  if (loading) {
+  if (loading && activeView !== 'jolt') {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-red-600" />
           <p className="text-slate-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Standalone Jolt window mock (no shell)
+  if (activeView === 'jolt') {
+    return (
+      <div className="min-h-screen bg-slate-50 p-6">
+        <div className="max-w-3xl mx-auto">
+          <JoltAppMock />
         </div>
       </div>
     );
@@ -631,7 +643,7 @@ export default function App() {
             )}
 
             {activeView === 'alerts' && (
-              <AlertsPanel devices={devices} />
+              <JoltRules />
             )}
 
             {activeView === 'detections' && (

@@ -386,7 +386,7 @@ export function LazyDataGrid() {
                 </div>
               )}
 
-              {sqlQuery && !initialLoading && (
+              {(sqlQuery || initialLoading) && (
                 <div className="mt-3 border rounded-lg overflow-hidden bg-slate-50">
                   <button
                     onClick={() => setShowSql(!showSql)}
@@ -395,6 +395,12 @@ export function LazyDataGrid() {
                     <div className="flex items-center gap-2">
                       <Code2 className="w-4 h-4" />
                       <span>SQL Query</span>
+                      {initialLoading && (
+                        <span className="inline-flex items-center gap-2 text-xs text-slate-500">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Loading...
+                        </span>
+                      )}
                     </div>
                     {showSql ? (
                       <ChevronUp className="w-4 h-4" />
@@ -404,24 +410,35 @@ export function LazyDataGrid() {
                   </button>
                   {showSql && (
                     <div className="border-t bg-slate-900">
-                      <SyntaxHighlighter
-                        language="sql"
-                        style={vscDarkPlus}
-                        customStyle={{
-                          margin: 0,
-                          padding: '1rem',
-                          fontSize: '0.75rem',
-                          lineHeight: '1.5',
-                        }}
-                        showLineNumbers={false}
-                      >
-                        {format(sqlQuery, {
-                          language: 'sql',
-                          tabWidth: 2,
-                          keywordCase: 'upper',
-                          indentStyle: 'standard',
-                        })}
-                      </SyntaxHighlighter>
+                      {initialLoading ? (
+                        <div className="p-4 text-sm text-slate-200 flex items-center gap-3">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating SQL...
+                        </div>
+                      ) : sqlQuery ? (
+                        <SyntaxHighlighter
+                          language="sql"
+                          style={vscDarkPlus}
+                          customStyle={{
+                            margin: 0,
+                            padding: '1rem',
+                            fontSize: '0.75rem',
+                            lineHeight: '1.5',
+                          }}
+                          showLineNumbers={false}
+                        >
+                          {format(sqlQuery, {
+                            language: 'sql',
+                            tabWidth: 2,
+                            keywordCase: 'upper',
+                            indentStyle: 'standard',
+                          })}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <div className="p-4 text-sm text-slate-200">
+                          SQL not available yet.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

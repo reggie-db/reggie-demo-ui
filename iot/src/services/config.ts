@@ -11,7 +11,7 @@ export const USE_MOCK_DATA = false;
  * Base URL for the API server (defined in /openapi.yaml)
  * Change this based on your environment
  */
-export const API_BASE_URL = "http://localhost:8000";
+export const API_BASE_URL = "http://localhost:5000";
 
 /**
  * WebSocket URL for real-time event streaming
@@ -36,7 +36,7 @@ export const API_CONFIG = {
   apiKey: "", // Set to your API key
 
   // Request timeout in milliseconds
-  timeout: 1000 * 30,
+  timeout: 1000 * 60,
 };
 
 /**
